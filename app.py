@@ -1,96 +1,53 @@
 import streamlit as st
-import requests
-import pandas as pd
-from datetime import datetime
+import google.generativeai as genai
+from tavily import TavilyClient  # Tavily 사용 예시
 
-# --- 1. 페이지 설정 및 뤼튼 스타일 CSS ---
-st.set_page_config(page_title="보안 인텔리전스 에이전트", layout="wide", initial_sidebar_state="expanded")
+# --- 1. API 키 설정 (Streamlit Secrets 사용 권장) ---
+# st.secrets에 등록된 키를 불러옵니다.
+GENAI_API_KEY = st.secrets["GEMINI_API_KEY"]
+TAVILY_API_KEY = st.secrets["TAVILY_API_KEY"]
 
-st.markdown("""
-<style>
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-* { font-family: 'Pretendard', sans-serif; }
-.main { background-color: #F8F9FA; }
-.report-card { 
-    background-color: white; 
-    padding: 30px; 
-    border-radius: 18px; 
-    box-shadow: 0 8px 20px rgba(0,0,0,0.04);
-    border-top: 6px solid #051C48;
-    margin-bottom: 25px;
-}
-.stButton>button { 
-    background-color: #051C48; 
-    color: white; 
-    border-radius: 10px; 
-    font-weight: 600;
-    height: 3em;
-    width: 100%;
-    border: none;
-}
-.stButton>button:hover { 
-    background-color: #0066FF; 
-    border: none; 
-}
-.sidebar-title { 
-    font-size: 1.2rem; 
-    font-weight: 700; 
-    color: #051C48; 
-    margin-bottom: 20px; 
-}
-</style>
-""", unsafe_allow_html=True)
+genai.configure(api_key=GENAI_API_KEY)
+tavily = TavilyClient(api_key=TAVILY_API_KEY)
 
-# --- 2. 데이터 소스 설정 (GitHub 연동) ---
-GITHUB_USER = "yoondh-ai"
-REPO_NAME = "security-market-intelligence"
+# --- 2. 에이전트 핵심 함수 ---
+def run_workflow(keyword, period, my_info):
+    # Step 1: 뉴스 수집 (Tavily AI 검색)
+    search_result = tavily.search(
+        query=f"{keyword} 보안 뉴스 {period}", 
+        search_depth="advanced", 
+        max_results=10
+    )
+    
+    # Step 2 & 3: Gemini 분석 및 리포트 생성
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    prompt = f"""당신은 정보보안 분석가입니다. 다음 뉴스 데이터를 바탕으로 리포트를 작성하세요.
 
-# Kiro가 생성하는 리포트 경로 (실제 파일명에 맞춰 동적 할당 가능)
-DEFAULT_FILE = "security_intelligence_report_2026-03-08.md"
-RAW_URL = f"https://raw.githubusercontent.com/{GITHUB_USER}/{REPO_NAME}/main/{DEFAULT_FILE}"
+키워드: {keyword}
+자사정보: {my_info}
+데이터: {search_result}
 
-def load_github_report(url):
-    try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            return response.text
-        return "⚠️ 리포트 파일을 찾을 수 없습니다. (GitHub 동기화 대기 중)"
-    except:
-        return "❌ 연결 오류가 발생했습니다."
+[필수 포함 내용]
+1. 뉴스별 핵심 요약 및 발행일
+2. 타 경쟁사와의 기술적 차별점 분석
+3. 자사 솔루션과의 비교 및 전략적 제언
 
-# --- 3. 사이드바 (Wrtn 스타일 메뉴) ---
+(마크다운 형식으로 작성할 것)"""
+    
+    response = model.generate_content(prompt)
+    return response.text
+
+# --- 3. UI 부분 ---
+st.title("🛡️ 실시간 보안 인텔리전스 에이전트 (API 연동형)")
+
 with st.sidebar:
-    st.markdown('<p class="sidebar-title">🔍 분석 대상 프리셋</p>', unsafe_allow_html=True)
-    target = st.radio(
-        "경쟁사/키워드를 선택하세요", 
-        ["안랩 vs 마크애니", "제로 트러스트", "보안 컴플라이언스"],
-        index=0
-    )
-    st.divider()
-    st.caption("Last Sync: " + datetime.now().strftime("%Y-%m-%d %H:%M"))
+    keyword = st.text_input("키워드")
+    my_info = st.text_area("자사 정보")
+    
+    if st.button("🚀 실시간 분석 시작"):
+        with st.spinner("뉴스를 수집하고 Gemini가 분석 중입니다..."):
+            report = run_workflow(keyword, "2026", my_info)
+            st.session_state['latest_report'] = report
 
-# --- 4. 메인 화면 레이아웃 ---
-st.title("🛡️ 정보보안 시장조사 인텔리전스")
-st.markdown(f"**{target}**에 대한 최신 분석 리포트입니다.")
-
-# 분석 실행/새로고침 버튼
-if st.button("🔄 최신 분석 리포트 불러오기"):
-    with st.spinner("Kiro 인텔리전스 엔진에서 최신 데이터를 읽어오는 중..."):
-        content = load_github_report(RAW_URL)
-        st.markdown('<div class="report-card">', unsafe_allow_html=True)
-        st.markdown(content)
-        st.markdown('</div>', unsafe_allow_html=True)
-else:
-    st.info("왼쪽에서 대상을 선택한 후 '리포트 불러오기' 버튼을 클릭해 주세요.")
-
-# --- 5. 피드백 및 수정 요청 (Gemini 인터랙션 영역) ---
-st.divider()
-st.subheader("💬 분석 결과 피드백")
-
-with st.expander("리포트 내용 수정 또는 추가 조사 요청"):
-    user_input = st.text_area(
-        "Gemini에게 요청할 내용을 입력하세요.", 
-        placeholder="예: 마크애니의 C2PA 기술과 안랩의 대응 전략을 더 자세히 비교해줘."
-    )
-    if st.button("Gemini에게 수정 요청 발송"):
-        st.success("피드백이 접수되었습니다. Gemini가 리포트를 업데이트할 예정입니다.")
+if 'latest_report' in st.session_state:
+    st.markdown(st.session_state['latest_report'])
