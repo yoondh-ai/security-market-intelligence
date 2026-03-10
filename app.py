@@ -56,6 +56,22 @@ def run_workflow(keyword, period, my_info):
 # --- 3. UI 부분 ---
 st.title("🛡️ 실시간 보안 인텔리전스 에이전트 (API 연동형)")
 
+# API 키 테스트 버튼 추가
+if st.button("🔍 API 키 테스트"):
+    try:
+        # 사용 가능한 모델 목록 확인
+        models = genai.list_models()
+        st.success("✅ Gemini API 연결 성공!")
+        st.write("사용 가능한 모델:")
+        for model in models:
+            if 'generateContent' in model.supported_generation_methods:
+                st.write(f"- {model.name}")
+    except Exception as e:
+        st.error(f"❌ API 키 오류: {str(e)}")
+        st.info("해결 방법: https://aistudio.google.com/app/apikey 에서 새 API 키를 생성하세요")
+
+st.divider()
+
 with st.sidebar:
     keyword = st.text_input("키워드", placeholder="예: 안랩")
     my_info = st.text_area("자사 정보", placeholder="예: 마크애니 - DRM 및 워터마킹 전문")
