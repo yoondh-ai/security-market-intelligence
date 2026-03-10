@@ -24,16 +24,13 @@ def run_workflow(keyword, period, my_info):
         )
         
         # Step 2 & 3: Gemini 분석 및 리포트 생성
-        # API 버전별 모델 이름 시도
+        # 2026년 실제 사용 가능한 모델들 (API 키 테스트로 확인됨)
         model_configs = [
-            ('models/gemini-1.5-flash-latest', {}),
-            ('models/gemini-1.5-flash', {}),
-            ('models/gemini-1.5-pro-latest', {}),
-            ('models/gemini-1.5-pro', {}),
-            ('gemini-1.5-flash-latest', {}),
-            ('gemini-1.5-flash', {}),
-            ('gemini-1.5-pro-latest', {}),
-            ('gemini-1.5-pro', {}),
+            ('models/gemini-2.5-flash', {}),  # 최신 고속 모델
+            ('models/gemini-2.5-pro', {}),    # 최신 고성능 모델
+            ('models/gemini-2.0-flash', {}),  # 안정 버전
+            ('models/gemini-flash-latest', {}),  # 최신 플래시
+            ('models/gemini-pro-latest', {}),    # 최신 프로
         ]
         
         last_error = None
@@ -72,10 +69,11 @@ def run_workflow(keyword, period, my_info):
 3. 새 API 키를 생성하여 Streamlit Secrets에 업데이트하세요
 
 **현재 시도한 모델들:**
-- gemini-1.5-flash-latest
-- gemini-1.5-flash
-- gemini-1.5-pro-latest
-- gemini-1.5-pro
+- models/gemini-2.5-flash (최신 고속)
+- models/gemini-2.5-pro (최신 고성능)
+- models/gemini-2.0-flash (안정 버전)
+- models/gemini-flash-latest
+- models/gemini-pro-latest
 """
 
 # --- 3. UI 부분 ---
