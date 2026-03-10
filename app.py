@@ -24,8 +24,13 @@ def run_workflow(keyword, period, my_info):
         )
         
         # Step 2 & 3: Gemini 분석 및 리포트 생성
-        # 여러 모델 이름 시도
-        model_names = ['gemini-1.5-pro-latest', 'gemini-1.5-pro', 'gemini-pro', 'models/gemini-pro']
+        # 2026년 현재 사용 가능한 모델 이름들
+        model_names = [
+            'gemini-1.5-flash',
+            'gemini-1.5-pro',
+            'gemini-2.0-flash-exp',
+            'gemini-exp-1206'
+        ]
         
         for model_name in model_names:
             try:
