@@ -20,7 +20,7 @@ def run_workflow(keyword, period, my_info):
     )
     
     # Step 2 & 3: Gemini 분석 및 리포트 생성
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-pro')
     prompt = f"""당신은 정보보안 분석가입니다. 다음 뉴스 데이터를 바탕으로 리포트를 작성하세요.
 
 키워드: {keyword}
