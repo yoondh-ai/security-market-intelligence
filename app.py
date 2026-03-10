@@ -24,15 +24,20 @@ def run_workflow(keyword, period, my_info):
         )
         
         # Step 2 & 3: Gemini 분석 및 리포트 생성
-        # 2026년 현재 사용 가능한 모델 이름들
-        model_names = [
-            'gemini-1.5-flash',
-            'gemini-1.5-pro',
-            'gemini-2.0-flash-exp',
-            'gemini-exp-1206'
+        # API 버전별 모델 이름 시도
+        model_configs = [
+            ('models/gemini-1.5-flash-latest', {}),
+            ('models/gemini-1.5-flash', {}),
+            ('models/gemini-1.5-pro-latest', {}),
+            ('models/gemini-1.5-pro', {}),
+            ('gemini-1.5-flash-latest', {}),
+            ('gemini-1.5-flash', {}),
+            ('gemini-1.5-pro-latest', {}),
+            ('gemini-1.5-pro', {}),
         ]
         
-        for model_name in model_names:
+        last_error = None
+        for model_name, config in model_configs:
             try:
                 model = genai.GenerativeModel(model_name)
                 prompt = f"""당신은 정보보안 분석가입니다. 다음 뉴스 데이터를 바탕으로 리포트를 작성하세요.
@@ -51,12 +56,27 @@ def run_workflow(keyword, period, my_info):
                 response = model.generate_content(prompt)
                 return response.text
             except Exception as model_error:
-                if model_name == model_names[-1]:  # 마지막 모델도 실패하면
-                    raise Exception(f"모든 모델 시도 실패. 마지막 오류: {str(model_error)}")
+                last_error = str(model_error)
                 continue
+        
+        # 모든 모델 실패 시
+        raise Exception(f"모든 모델 시도 실패. 마지막 오류: {last_error}")
                 
     except Exception as e:
-        return f"❌ 오류 발생: {str(e)}\n\n**해결 방법:**\n1. Gemini API 키가 올바른지 확인\n2. https://aistudio.google.com/app/apikey 에서 새 API 키 발급\n3. Streamlit Secrets에 올바른 키 입력"
+        error_msg = str(e)
+        return f"""❌ 오류 발생: {error_msg}
+
+**해결 방법:**
+1. 먼저 상단의 '🔍 API 키 테스트' 버튼을 클릭하여 사용 가능한 모델을 확인하세요
+2. API 키가 올바른지 확인: https://aistudio.google.com/app/apikey
+3. 새 API 키를 생성하여 Streamlit Secrets에 업데이트하세요
+
+**현재 시도한 모델들:**
+- gemini-1.5-flash-latest
+- gemini-1.5-flash
+- gemini-1.5-pro-latest
+- gemini-1.5-pro
+"""
 
 # --- 3. UI 부분 ---
 st.title("🛡️ 실시간 보안 인텔리전스 에이전트 (API 연동형)")
